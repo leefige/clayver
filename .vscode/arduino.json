@@ -1,6 +1,6 @@
 {
     "sketch": "ardu\\clayver.ino",
     "board": "arduino:avr:uno",
-    "port": "COM3",
+    "port": "COM5",
     "output": "./ardu/build"
 }
