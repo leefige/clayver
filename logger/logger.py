@@ -7,8 +7,6 @@ import numpy as np
 from task import Task
 from utility import initSerial, readline, writeline
 
-from math import *
-
 PORT_NAME = "COM5"
 LOG_PATH = "../data/"
 
