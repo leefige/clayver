@@ -1,11 +1,13 @@
-import sys
-from task import Task
-from threading import Thread
+import sys, time
 from queue import Queue
+from threading import Thread
+import matplotlib.pyplot as plt
+import numpy as np
 
+from task import Task
 from utility import initSerial, readline, writeline
 
-PORT_NAME = "COM3"
+PORT_NAME = "COM5"
 LOG_PATH = "../data/"
 
 class Task_Read(Task):
@@ -43,15 +45,51 @@ class Task_Log(Task):
         line = self._in_queue.get()
         self._fout.write(line + '\n')
 
+class Task_Plot(Task):
+    def __init__(self, queue:Queue):
+        super().__init__()
+        self._in_queue = queue
+        self._time = []
+        self._t_now = 0
+        self._data = []
+        for i in range(6):
+            self._data.append([])
+
+    # override
+    def _enter(self):
+        plt.ion()
+        plt.figure(1)
+        
+    # override
+    def _exit(self):
+        pass
+    
+    # override
+    def _func(self):
+        line = self._in_queue.get()
+        if line == '':
+            return
+        vals = line.split(' ')
+        self._time.append(self._t_now)
+        self._data[0].append(int(vals[0]))
+        plt.plot(self._time, self._data[0], '-b')
+        plt.draw()
+        time.sleep(0.05)
+
 # -----------------
 
 def start(filename):
     print("Press 's' to start logging")
     q_log = Queue()
-    readTask = Task_Read([q_log])
+    q_plt = Queue()
+
+    readTask = Task_Read([q_log, q_plt])
     writeTask = Task_Log(q_log, filename=LOG_PATH + filename + ".txt")
+    plotTask = Task_Plot(q_plt)
+    
     t_read = Thread(target=readTask.run, name="thread_read")
     t_write = Thread(target=writeTask.run, name="thread_write")
+    t_plot = Thread(target=plotTask.run, name="thread_plot")
 
     started = False
     while True:
@@ -61,8 +99,10 @@ def start(filename):
             print("Logging...")
             t_read.start()
             t_write.start()
+            t_plot.start()
             started = True
         elif key[0] == 'q':
+            plotTask.terminate()
             writeTask.terminate()
             readTask.terminate()
             print("Terminated!")
