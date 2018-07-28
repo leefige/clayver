@@ -25,9 +25,12 @@ class Task:
         self.__running = True
         self._enter()
 
+        # spin
         while self.isRunning():
+            # spin
             while self.isPaused():
-                pass
+                if not self.isRunning():
+                    break
             self._func()
 
         self._exit()

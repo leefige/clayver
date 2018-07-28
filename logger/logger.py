@@ -77,45 +77,80 @@ class Task_Plot(Task):
         time.sleep(0.05)
 
 # -----------------
+class Logger:
+    def __init__(self):
+        self._started = False
 
-def start(filename):
-    print("Press 's' to start logging")
-    q_log = Queue()
-    q_plt = Queue()
+    def start(self, filename):
+        print("Press 's' to start logging")
+        q_log = Queue()
+        q_plt = Queue()
 
-    readTask = Task_Read([q_log, q_plt])
-    writeTask = Task_Log(q_log, filename=LOG_PATH + filename + ".txt")
-    plotTask = Task_Plot(q_plt)
-    
-    t_read = Thread(target=readTask.run, name="thread_read")
-    t_write = Thread(target=writeTask.run, name="thread_write")
-    t_plot = Thread(target=plotTask.run, name="thread_plot")
+        readTask = Task_Read([q_log, q_plt])
+        writeTask = Task_Log(q_log, filename=LOG_PATH + filename + ".txt")
+        plotTask = Task_Plot(q_plt)
+        
+        t_read = Thread(target=readTask.run, name="thread_read")
+        t_write = Thread(target=writeTask.run, name="thread_write")
 
-    started = False
-    while True:
-        key = input()
-        if key[0] == 's' and not started:
-            print("Press 'q' to quit, 'p' to pause")
-            print("Logging...")
-            t_read.start()
-            t_write.start()
-            t_plot.start()
-            started = True
-        elif key[0] == 'q':
-            plotTask.terminate()
-            writeTask.terminate()
-            readTask.terminate()
-            print("Terminated!")
-            break
-        elif key[0] == 'p':
-            print("Paused!Press 'r' to resume")
-            readTask.pause()
-        elif key[0] == 'r':
-            print("Resumed. Logging...")
-            readTask.resume()
+        m_time = []
+        t_now = 0
+        data = []
+        for i in range(6):
+            data.append([])
+        plt.ion()
+        plt.figure(1)
+
+        # subroutine for control
+        def control():
+            while True:
+                key = input()
+                if key[0] == 'q':
+                    plotTask.terminate()
+                    writeTask.terminate()
+                    readTask.terminate()
+                    self._started = False
+                    print("Terminated!")
+                    return
+                elif key[0] == 'p':
+                    print("Paused! Press 'r' to resume")
+                    readTask.pause()
+                elif key[0] == 'r':
+                    print("Resumed. Logging...")
+                    readTask.resume()
+
+        # wait for user to start
+        while True:
+            key = input()
+            if key[0] == 's':
+                print("Press 'q' to quit, 'p' to pause")
+                print("Logging...")
+                self._started = True
+                t_read.start()
+                t_write.start()
+                # t_plot.start()
+
+                # new thread to control
+                t_ctrl = Thread(target=control, name="thread_control")
+                t_ctrl.start()
+                break
+        
+        # start to draw
+        while self._started:
+            line = q_plt.get()
+            if line == '':
+                continue
+            vals = line.split(' ')
+            m_time.append(t_now)
+            data[0].append(int(vals[0]))
+            plt.plot(m_time, data[0], '-r')
+            plt.draw()
+            t_now += 0.05
+            time.sleep(0.05)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: %s output_filename" % sys.argv[0])
         exit(-1)
-    start(sys.argv[1])
+    log = Logger() 
+    log.start(sys.argv[1])
