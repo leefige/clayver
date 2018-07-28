@@ -7,6 +7,8 @@ import numpy as np
 from task import Task
 from utility import initSerial, readline, writeline
 
+from math import *
+
 PORT_NAME = "COM5"
 LOG_PATH = "../data/"
 
@@ -98,8 +100,13 @@ class Logger:
         data = []
         for i in range(6):
             data.append([])
+
+        # fig,ax=plt.subplots()
         plt.ion()
-        plt.figure(1)
+        y1=[]
+        y2=[]
+        # plt.ion()
+        # plt.figure(1)
 
         # subroutine for control
         def control():
@@ -136,17 +143,27 @@ class Logger:
                 break
         
         # start to draw
+        
+
         while self._started:
             line = q_plt.get()
             if line == '':
                 continue
             vals = line.split(' ')
             m_time.append(t_now)
-            data[0].append(int(vals[0]))
-            plt.plot(m_time, data[0], '-r')
-            plt.draw()
-            t_now += 0.05
-            time.sleep(0.05)
+            data[0].append(vals[0])
+            t_now += 0.1
+            # ax.cla()
+            # ax.set_title("Loss")
+            # ax.set_xlabel("Iteration")
+            # ax.set_ylabel("Loss")
+            # ax.set_xlim(0,55)
+            # ax.set_ylim(0, 300)
+            # ax.grid()
+            plt.plot(m_time, data[0], label='train')
+            # ax.plot(y2,label='test')
+            # ax.legend(loc='best')
+            plt.pause(0.1)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
