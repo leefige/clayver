@@ -7,13 +7,24 @@ import numpy as np
 from task import Task
 from utility import initSerial, readline, writeline
 
-PORT_NAME = "COM5"
+PORT_NAME = "COM3"
 LOG_PATH = "../data/"
 
 class Task_Read(Task):
     def __init__(self, queues:list):
         super().__init__()
         self._out_queues = queues
+
+    def _parseLine(self, line):
+        line = line.strip()
+        if line == '':
+            return None
+        vals = line.split(' ')
+        if len(vals) < 6:
+            return None
+        else:
+            neo_vals = [int(val) for val in vals]
+            return neo_vals
     
     # override
     def _enter(self):
@@ -22,8 +33,10 @@ class Task_Read(Task):
     # override
     def _func(self):
         line = readline(self._serial)
-        for queue in self._out_queues:
-            queue.put_nowait(line)
+        vals = self._parseLine(line)
+        if vals:
+            for queue in self._out_queues:
+                queue.put_nowait(vals)
 
 class Task_Log(Task):
     def __init__(self, queue:Queue, filename):
@@ -42,7 +55,8 @@ class Task_Log(Task):
     
     # override
     def _func(self):
-        line = self._in_queue.get()
+        vals = self._in_queue.get()
+        line = ' '.join('%d' % n for n in vals)
         self._fout.write(line + '\n')
 
 class Task_Plot(Task):
@@ -101,8 +115,6 @@ class Logger:
 
         # fig,ax=plt.subplots()
         plt.ion()
-        y1=[]
-        y2=[]
         # plt.ion()
         # plt.figure(1)
 
@@ -142,26 +154,42 @@ class Logger:
         
         # start to draw
         
-
+        plotWindow = 50
+        curWindowLen = 0
+        curPos = 0
         while self._started:
-            line = q_plt.get()
-            if line == '':
-                continue
-            vals = line.split(' ')
+            vals = q_plt.get()
             m_time.append(t_now)
-            data[0].append(vals[0])
-            t_now += 0.1
-            # ax.cla()
-            # ax.set_title("Loss")
-            # ax.set_xlabel("Iteration")
-            # ax.set_ylabel("Loss")
-            # ax.set_xlim(0,55)
-            # ax.set_ylim(0, 300)
-            # ax.grid()
-            plt.plot(m_time, data[0], label='train')
+            for i in range(6):
+                data[i].append(vals[i])
+            t_now += 0.05
+            plt.cla()
+            if curWindowLen < plotWindow:
+                # ax.cla()
+                # ax.set_title("Loss")
+                # ax.set_xlabel("Iteration")
+                # ax.set_ylabel("Loss")
+                # ax.set_xlim(0,55)
+                # plt.ylim(0, 1024)
+                # ax.grid()
+                plt.plot(m_time, data[0], '-r')
+                plt.plot(m_time, data[1], '-g')
+                plt.plot(m_time, data[2], '-b')
+                plt.plot(m_time, data[3], '-c')
+                plt.plot(m_time, data[4], '-m')
+                plt.plot(m_time, data[5], '-y')
+                curWindowLen += 1
+            else:
+                plt.plot(m_time[curPos-plotWindow:curPos], data[0][curPos-plotWindow:curPos], '-r')
+                plt.plot(m_time[curPos-plotWindow:curPos], data[1][curPos-plotWindow:curPos], '-g')
+                plt.plot(m_time[curPos-plotWindow:curPos], data[2][curPos-plotWindow:curPos], '-b')
+                plt.plot(m_time[curPos-plotWindow:curPos], data[3][curPos-plotWindow:curPos], '-c')
+                plt.plot(m_time[curPos-plotWindow:curPos], data[4][curPos-plotWindow:curPos], '-m')
+                plt.plot(m_time[curPos-plotWindow:curPos], data[5][curPos-plotWindow:curPos], '-y')
             # ax.plot(y2,label='test')
-            # ax.legend(loc='best')
-            plt.pause(0.1)
+            # plt.legend(loc='best')
+            curPos += 1
+            plt.pause(0.05)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
