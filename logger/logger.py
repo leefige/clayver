@@ -7,8 +7,8 @@ import numpy as np
 from task import Task
 from utility import initSerial, readline, writeline
 
-PORT_NAME = "COM3"
-LOG_PATH = "../data/"
+PORT_NAME = "COM4"
+LOG_PATH = "../data/clay/"
 
 class Task_Read(Task):
     def __init__(self, queues:list):
@@ -56,9 +56,10 @@ class Task_Log(Task):
     # override
     def _func(self):
         vals = self._in_queue.get()
-        line = ' '.join('%d' % n for n in vals)
-        self._fout.write(line + '\n')
+        line = " " + ' '.join('%d' % n for n in vals)
+        self._fout.write(str(time.time()) + line + '\n')
 
+# ! deprecated
 class Task_Plot(Task):
     def __init__(self, queue:Queue):
         super().__init__()
@@ -157,39 +158,29 @@ class Logger:
         plotWindow = 50
         curWindowLen = 0
         curPos = 0
+        colorStr = "rgbcmy"
         while self._started:
             vals = q_plt.get()
             m_time.append(t_now)
             for i in range(6):
                 data[i].append(vals[i])
             t_now += 0.05
-            plt.cla()
+
             if curWindowLen < plotWindow:
-                # ax.cla()
-                # ax.set_title("Loss")
-                # ax.set_xlabel("Iteration")
-                # ax.set_ylabel("Loss")
-                # ax.set_xlim(0,55)
-                # plt.ylim(0, 1024)
-                # ax.grid()
-                plt.plot(m_time, data[0], '-r')
-                plt.plot(m_time, data[1], '-g')
-                plt.plot(m_time, data[2], '-b')
-                plt.plot(m_time, data[3], '-c')
-                plt.plot(m_time, data[4], '-m')
-                plt.plot(m_time, data[5], '-y')
+                if curPos % 10 == 0:
+                    # plt.cla()
+                    for i in range(6):
+                        plt.plot(m_time, data[i], '-'+colorStr[i])
                 curWindowLen += 1
             else:
-                plt.plot(m_time[curPos-plotWindow:curPos], data[0][curPos-plotWindow:curPos], '-r')
-                plt.plot(m_time[curPos-plotWindow:curPos], data[1][curPos-plotWindow:curPos], '-g')
-                plt.plot(m_time[curPos-plotWindow:curPos], data[2][curPos-plotWindow:curPos], '-b')
-                plt.plot(m_time[curPos-plotWindow:curPos], data[3][curPos-plotWindow:curPos], '-c')
-                plt.plot(m_time[curPos-plotWindow:curPos], data[4][curPos-plotWindow:curPos], '-m')
-                plt.plot(m_time[curPos-plotWindow:curPos], data[5][curPos-plotWindow:curPos], '-y')
+                if curPos % 10 == 0:
+                    # plt.cla()
+                    for i in range(6):
+                        plt.plot(m_time[curPos-plotWindow:curPos], data[i][curPos-plotWindow:curPos], '-'+colorStr[i])
             # ax.plot(y2,label='test')
             # plt.legend(loc='best')
             curPos += 1
-            plt.pause(0.05)
+            plt.pause(0.01)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

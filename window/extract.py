@@ -85,23 +85,24 @@ def extract(filename):
             if vals:
                 samples.append(Sample(vals))
 
-    for i in range(0, 6):
-        plt.subplot(2, 3, i+1)
-        mi = []
-        ma = []
-        me = []
-        idx = []
-        cur = 0
-        for win in samples:
-            idx.append(cur)
-            cur += 1
-            mi.append(win[i])
-        plt.title(filename)
-        plt.plot(idx, mi, "-r")
+    # * Show raw samples here
+    # for i in range(0, 6):
+    #     plt.subplot(2, 3, i+1)
+    #     mi = []
+    #     ma = []
+    #     me = []
+    #     idx = []
+    #     cur = 0
+    #     for win in samples:
+    #         idx.append(cur)
+    #         cur += 1
+    #         mi.append(win[i])
+    #     plt.title(filename)
+    #     plt.plot(idx, mi, "-r")
         # plt.plot(idx, ma, "--b")
         # plt.plot(idx, me, ".-g")
 
-    plt.show()
+    # plt.show()
 
     print("In file '%s', valid samples: %d" % (filename, len(samples)))
     pos = 0
