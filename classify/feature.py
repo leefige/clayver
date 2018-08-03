@@ -67,7 +67,7 @@ def getFeature_bias(windows):
         # print(_X)
         X = np.array(_X)
         print(X.shape)
-        clf = KMeans(n_clusters=2).fit(X)
+        clf = KMeans(n_clusters=6).fit(X)
         print(clf.cluster_centers_)
 
         labels = clf.labels_

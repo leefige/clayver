@@ -1,5 +1,5 @@
 import datetime
-import time
+import time, sys, os.path
 
 import serial
 
@@ -8,7 +8,7 @@ import numpy as np
 from ctypes import cdll
 from ctypes import c_double
 
-DATA_PATH = "../data/press/"
+DATA_PATH = "../data/"
 
 def read_data(data, offset):
     arr = []
@@ -22,8 +22,19 @@ def read_data1(data, offset):
     return int(data[offset] << 8 | data[1 + offset])
 
 
+# ----
+
+dirname = sys.argv[1]
+no = sys.argv[2]
+
+if not os.path.isdir(DATA_PATH + dirname):
+    os.mkdir(DATA_PATH + dirname)
+
+if not os.path.isdir(DATA_PATH + dirname + "/" + no):
+    os.mkdir(DATA_PATH + dirname + "/" + no)
+
 ser = serial.Serial('COM6', 115200)
-raw_datafile = open(DATA_PATH + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '-raw.txt', 'w')
+raw_datafile = open(DATA_PATH + dirname + "/" + no + '/' + 'press.txt', 'w')
 ser.write(b'\x01')
 
 count = 0
