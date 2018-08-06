@@ -1,0 +1,13 @@
+# no idle
+$ py -3 svm.py new
+KNN precision: 0.967565
+SVC precision: 0.986785
+DT precision: 0.930248
+NB precision: 0.714372
+
+# idle
+$ py -3 svm.py new
+KNN precision: 0.863202
+SVC precision: 0.872157
+DT precision: 0.845970
+NB precision: 0.635518

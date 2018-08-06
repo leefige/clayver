@@ -1,40 +1,36 @@
 from matplotlib import pyplot as plt
 import sys
 import json
+import numpy as np
+from utility import *
+from json import JSONEncoder
 
-PARSED_DIR = "../parsed/"
 DATA_DIR = "../data/"
 WINDOW_SIZE = 10
 TOUCH_CNT = 5
-FEAT_SIZE = 6
 
 PRESS_THRESHOLD = 3000
 
 class Sample:
     def __init__(self, tp:int, vals:list):
-        self._FEAT_SIZE = FEAT_SIZE
         self.tp = tp
         self.label = -1
-        self._data = []
-        assert len(vals) == self._FEAT_SIZE
-        for i in range(self._FEAT_SIZE):
-            self._data.append(vals[i])
+        self.data = []
+        assert len(vals) == FEAT_SIZE
+        for i in range(FEAT_SIZE):
+            self.data.append(vals[i])
     
     def __getitem__(self, index:int):
         assert index >= 0
-        return self._data[index]
-
-    def getFeatLen(self):
-        return self._FEAT_SIZE
+        return self.data[index]
     
 class Window:
     def __init__(self):
-        self._FEAT_SIZE = FEAT_SIZE
         self._MAX_SIZE = WINDOW_SIZE
         self.size = 0
-        self._sum = [0 for i in range(self._FEAT_SIZE)]
-        self._min = [(1 << 32) for i in range(self._FEAT_SIZE)]
-        self._max = [-1 for i in range(self._FEAT_SIZE)]
+        self._sum = [0 for i in range(FEAT_SIZE)]
+        self._min = [(1 << 32) for i in range(FEAT_SIZE)]
+        self._max = [-1 for i in range(FEAT_SIZE)]
         self.start = 0
         self.end = 0
 
@@ -57,12 +53,12 @@ class Window:
         if self.size >= self._MAX_SIZE:
             return False
 
-        assert self._FEAT_SIZE == sample.getFeatLen()
+        assert FEAT_SIZE == sample.getFeatLen()
         if self.size == 0:
             self.start = pos
         self.end = pos + 1
         self.size += 1
-        for i in range(self._FEAT_SIZE):
+        for i in range(FEAT_SIZE):
             if self._max[i] < sample[i]:
                 self._max[i] = sample[i]
             if self._min[i] > sample[i]:
@@ -81,6 +77,45 @@ def splitLine(line):
         tp = round(float(vals[0]) * 1000)
         neo_vals = [int(val) for val in vals[1:]]
         return tp, neo_vals
+
+def filter(data:dict):
+    print(data.keys())
+    idles = [da['data'] for da in data[-1]]
+    idle_data = []
+    for i in range(FEAT_SIZE):
+        idle_data.append([da[i] for da in idles])
+    
+    means = [np.mean(li) for li in idle_data]
+    print(means)
+
+    ranges = []
+    mins = []
+    stds = []
+    flat_data = []
+    for i in range(FEAT_SIZE):
+        flat_data.append([])
+
+    for key in data.keys():
+        li = data[key]
+        for i in range(FEAT_SIZE):
+            flat_data[i].extend([da['data'][i] for da in li])
+
+    for i in range(FEAT_SIZE):
+        ranges.append(np.max(flat_data[i]) - np.min(flat_data[i]))
+        mins.append(np.min(flat_data[i]))
+        stds.append(np.std(flat_data[i]))
+    print(ranges)
+    print(mins)
+    print(stds)
+
+    for key in data.keys():
+        li = data[key]
+        for it in li:
+            for i in range(FEAT_SIZE):
+                # it['data'][i] = (it['data'][i] - means[i]) / ranges[i]
+                it['data'][i] = (it['data'][i] - means[i]) / stds[i]
+    # print(data)
+    return data
 
 def extract(filename:str, no:int):
     path = DATA_DIR + filename + "/" + str(no) + "/clay.txt"
@@ -122,7 +157,7 @@ def extract(filename:str, no:int):
         if va.label == -1:
             print(" ", end='')
         else:
-            print("1", end='')
+            print(va.label, end='')
 
 
     # * Show raw samples here
@@ -173,11 +208,13 @@ if __name__ == '__main__':
         print("Extracting %s_%d" % (sys.argv[1], i))
         samples = extract(sys.argv[1], i)
         for sample in samples:
-            content = [sample[j] for j in range(FEAT_SIZE)]
-            data[sample.label].append(content)
+            obj = sample.__dict__
+            del obj['tp']
+            data[sample.label].append(obj)
     
-    with open(PARSED_DIR + sys.argv[1] + ".json", 'w', encoding='utf8') as fout:
-        json.dump(data, fout, ensure_ascii=False)
+    data_ = filter(data)
+    # print(data_)
+    json_dump(data, sys.argv[1])
 
     # for window in windows:
     #     print("(%d, %d): %d" % (window.start, window.end, window.getMean(0)))
