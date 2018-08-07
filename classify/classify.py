@@ -1,4 +1,7 @@
-from utility import *
+import os, sys
+current_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(current_dir)
+
 from sys import argv
 import numpy as np
 from random import shuffle
@@ -7,7 +10,10 @@ from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.naive_bayes import BernoulliNB as NB
 from sklearn.model_selection import train_test_split
+from sklearn.externals import joblib
+from utility import *
 
+MODEL_DIR = '../models/'
 
 def genData(name:str, gen_idle=True):
     data = json_load(name)
@@ -49,15 +55,31 @@ def classify(X, y, clf):
     return cnt / len(y_test)
 
 if __name__ == '__main__':
-    X, y = genData(argv[1], False)
+    X, y = genData(argv[1], True)
     clas = []
     clas.append(["KNN", KNN(n_neighbors=6)])
     clas.append(["SVC", SVC()])
     clas.append(["DT", DT()])
     clas.append(["NB", NB()])
     # cla = KNN(n_neighbors=6)
+    clfIdx = 0
+    savedClfs = [None] * 4
+    bestPre = [0] * 4
     for clf in clas:
         pres = []
         for i in range(5000):
-            pres.append(classify(X, y, clf[1]))
+            p = classify(X, y, clf[1])
+            if p > bestPre[clfIdx]:
+                bestPre[clfIdx] = p
+                savedClfs[clfIdx] = clf[1]
+            pres.append(p)
         print("%s precision: %f" % (clf[0], np.mean(pres)))
+        joblib.dump(savedClfs[clfIdx], MODEL_DIR + clf[0] + '.pkl')
+        clfIdx += 1
+
+    # check if written
+    print("Using saved models:")
+    for clf in clas:
+        clf[1] = joblib.load(MODEL_DIR + clf[0] + '.pkl')
+        p = classify(X, y, clf[1])
+        print("%s precision: %f" % (clf[0], p))

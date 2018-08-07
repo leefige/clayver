@@ -117,6 +117,59 @@ def filter(data:dict):
     # print(data)
     return data
 
+def parseLocal(samples:list, window_size:int):
+    for i in range(len(samples)):
+        if i == 0:
+            pass
+        if i < window_size:
+            window = i
+        else:
+            window = window_size
+        localRange = samples[i - window:i]
+        for item in samples[i - window:i]:
+            pureData = [[]] * FEAT_SIZE
+
+    return samples
+
+def filter_local(data:dict):
+    print(data.keys())
+    idles = [da['data'] for da in data[-1]]
+    idle_data = []
+    for i in range(FEAT_SIZE):
+        idle_data.append([da[i] for da in idles])
+    
+    means = [np.mean(li) for li in idle_data]
+    print(means)
+
+    ranges = []
+    mins = []
+    stds = []
+    flat_data = []
+    for i in range(FEAT_SIZE):
+        flat_data.append([])
+
+    for key in data.keys():
+        li = data[key]
+        for i in range(FEAT_SIZE):
+            flat_data[i].extend([da['data'][i] for da in li])
+
+    for i in range(FEAT_SIZE):
+        ranges.append(np.max(flat_data[i]) - np.min(flat_data[i]))
+        mins.append(np.min(flat_data[i]))
+        stds.append(np.std(flat_data[i]))
+    print(ranges)
+    print(mins)
+    print(stds)
+
+    for key in data.keys():
+        li = data[key]
+        for it in li:
+            for i in range(FEAT_SIZE):
+                # it['data'][i] = (it['data'][i] - means[i]) / ranges[i]
+                it['data'][i] = (it['data'][i] - means[i]) / stds[i]
+    # print(data)
+    return data
+
 def extract(filename:str, no:int):
     path = DATA_DIR + filename + "/" + str(no) + "/clay.txt"
     pressPath = DATA_DIR + filename  + "/" + str(no) + "/press.txt"
@@ -135,7 +188,7 @@ def extract(filename:str, no:int):
             vals = line.split(' ')
             presses.append([round(float(vals[0]) * 1000), int(vals[1])])
 
-    # put label
+    # annotation
     cursor = 0
     validSamples = []
     for pre in presses:

@@ -1,11 +1,14 @@
+import os, sys
+current_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(current_dir)
+
 import sys, time, os
 from queue import Queue
 from threading import Thread
 import matplotlib.pyplot as plt
 import numpy as np
-
+from serialUtility import initSerial, readline, writeline
 from task import Task
-from utility import initSerial, readline, writeline
 
 PORT_NAME = "COM4"
 LOG_PATH = "../data/"
