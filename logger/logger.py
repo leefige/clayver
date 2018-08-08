@@ -1,107 +1,26 @@
 import os, sys
 current_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_dir)
+sys.path.append(os.path.dirname(current_dir))
 
-import sys, time, os
+import time
 from queue import Queue
 from threading import Thread
+
 import matplotlib.pyplot as plt
 import numpy as np
-from serialUtility import initSerial, readline, writeline
-from task import Task
 
-PORT_NAME = "COM4"
-LOG_PATH = "../data/"
+from common.defs import *
+from common.serialUtility import initSerial, readline, writeline
+from task.task import Task_Log, Task_Read
 
-SENSOR_NUM = 6
+SENSOR_NUM = 15
 PLOT_RANGE = 200
-ARDU_DELAY = 0.05
-PLOT_RATE = 1 / ARDU_DELAY / 2
-
-class Task_Read(Task):
-    def __init__(self, queues:list):
-        super().__init__()
-        self._out_queues = queues
-
-    def _parseLine(self, line):
-        line = line.strip()
-        if line == '':
-            return None
-        vals = line.split(' ')
-        if len(vals) < SENSOR_NUM:
-            return None
-        else:
-            neo_vals = [int(val) for val in vals]
-            return neo_vals
-    
-    # override
-    def _enter(self):
-        self._serial = initSerial(PORT_NAME)
-
-    # override
-    def _func(self):
-        line = readline(self._serial)
-        vals = self._parseLine(line)
-        if vals:
-            for queue in self._out_queues:
-                queue.put_nowait(vals)
-
-class Task_Log(Task):
-    def __init__(self, queue:Queue, filename):
-        super().__init__()
-        self._in_queue = queue
-        self._filename = filename
-
-    # override
-    def _enter(self):
-        self._fout = open(self._filename, 'w', encoding='utf-8')
-
-    # override
-    def _exit(self):
-        if not self._fout.closed:
-            self._fout.close()
-    
-    # override
-    def _func(self):
-        vals = self._in_queue.get()
-        line = " " + ' '.join('%d' % n for n in vals)
-        self._fout.write(str(time.time()) + line + '\n')
-
-# ! deprecated
-class Task_Plot(Task):
-    def __init__(self, queue:Queue):
-        super().__init__()
-        self._in_queue = queue
-        self._time = []
-        self._t_now = 0
-        self._data = []
-        for i in range(SENSOR_NUM):
-            self._data.append([])
-
-    # override
-    def _enter(self):
-        plt.ion()
-        plt.figure(1)
-        
-    # override
-    def _exit(self):
-        pass
-    
-    # override
-    def _func(self):
-        line = self._in_queue.get()
-        if line == '':
-            return
-        vals = line.split(' ')
-        self._time.append(self._t_now)
-        self._data[0].append(int(vals[0]))
-        plt.plot(self._time, self._data[0], '-b')
-        plt.draw()
-        time.sleep(ARDU_DELAY)
-
+PLOT_RATE = 10
 # -----------------
 class Logger:
     def __init__(self):
+        self._DRAW_NUM = 6
         self._started = False
         self.m_time = []
         self.data = []
@@ -112,17 +31,19 @@ class Logger:
         plt.cla()
         self.m_time.extend(t_arr)
         # print(v_arr)
-        for i in range(SENSOR_NUM):
+        for i in range(self._DRAW_NUM):
             self.data[i].extend(v_arr[i])
 
         if len(self.m_time) > PLOT_RANGE:
             self.m_time = self.m_time[-PLOT_RANGE:]
-            for i in range(SENSOR_NUM):
+            for i in range(self._DRAW_NUM):
                 self.data[i] = self.data[i][-PLOT_RANGE:]
-        plt.xlim(self.m_time[-1] - PLOT_RANGE * ARDU_DELAY, self.m_time[-1] + ARDU_DELAY)
+            plt.xlim(self.m_time[-1] - PLOT_RANGE * ARDU_DELAY, self.m_time[-1] + ARDU_DELAY)
+        else:
+            plt.xlim(0, PLOT_RANGE * ARDU_DELAY)
 
         colorStr = "rgbcmy"
-        for i in range(SENSOR_NUM):
+        for i in range(self._DRAW_NUM):
             plt.plot(self.m_time, self.data[i], '-'+colorStr[i])
         plt.pause(0.1)
 
@@ -140,7 +61,6 @@ class Logger:
             os.mkdir(LOG_PATH + filename + "/" + no)
 
         writeTask = Task_Log(q_log, filename=LOG_PATH + filename + "/" + no + '/' + "clay.txt")
-        plotTask = Task_Plot(q_plt)
         
         t_read = Thread(target=readTask.run, name="thread_read")
         t_write = Thread(target=writeTask.run, name="thread_write")
@@ -149,8 +69,9 @@ class Logger:
         def control():
             while True:
                 key = input()
+                if len(key) < 1:
+                    continue
                 if key[0] == 'q':
-                    plotTask.terminate()
                     writeTask.terminate()
                     readTask.terminate()
                     self._started = False
@@ -166,6 +87,8 @@ class Logger:
         # wait for user to start
         while True:
             key = input()
+            if len(key) < 1:
+                continue
             if key[0] == 's':
                 print("Press 'q' to quit, 'p' to pause")
                 print("Logging...")

@@ -1,36 +1,26 @@
+import os, sys
+current_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(current_dir)
+sys.path.append(os.path.dirname(current_dir))
+
+from common.defs import *
+from common.utility import *
+from common.sample import Sample
+
 from matplotlib import pyplot as plt
-import sys
-import json
 import numpy as np
-from utility import *
-from json import JSONEncoder
 
-DATA_DIR = "../data/"
 WINDOW_SIZE = 10
-TOUCH_CNT = 5
-
 PRESS_THRESHOLD = 3000
 
-class Sample:
-    def __init__(self, tp:int, vals:list):
-        self.tp = tp
-        self.label = -1
-        self.data = []
-        assert len(vals) == FEAT_SIZE
-        for i in range(FEAT_SIZE):
-            self.data.append(vals[i])
-    
-    def __getitem__(self, index:int):
-        assert index >= 0
-        return self.data[index]
-    
+SENSOR_NUM = 6
 class Window:
     def __init__(self):
         self._MAX_SIZE = WINDOW_SIZE
         self.size = 0
-        self._sum = [0 for i in range(FEAT_SIZE)]
-        self._min = [(1 << 32) for i in range(FEAT_SIZE)]
-        self._max = [-1 for i in range(FEAT_SIZE)]
+        self._sum = [0 for i in range(SENSOR_NUM)]
+        self._min = [(1 << 32) for i in range(SENSOR_NUM)]
+        self._max = [-1 for i in range(SENSOR_NUM)]
         self.start = 0
         self.end = 0
 
@@ -53,12 +43,12 @@ class Window:
         if self.size >= self._MAX_SIZE:
             return False
 
-        assert FEAT_SIZE == sample.getFeatLen()
+        assert SENSOR_NUM == sample.getFeatLen()
         if self.size == 0:
             self.start = pos
         self.end = pos + 1
         self.size += 1
-        for i in range(FEAT_SIZE):
+        for i in range(SENSOR_NUM):
             if self._max[i] < sample[i]:
                 self._max[i] = sample[i]
             if self._min[i] > sample[i]:
@@ -82,7 +72,7 @@ def filter(data:dict):
     print(data.keys())
     idles = [da['data'] for da in data[-1]]
     idle_data = []
-    for i in range(FEAT_SIZE):
+    for i in range(SENSOR_NUM):
         idle_data.append([da[i] for da in idles])
     
     means = [np.mean(li) for li in idle_data]
@@ -92,15 +82,15 @@ def filter(data:dict):
     mins = []
     stds = []
     flat_data = []
-    for i in range(FEAT_SIZE):
+    for i in range(SENSOR_NUM):
         flat_data.append([])
 
     for key in data.keys():
         li = data[key]
-        for i in range(FEAT_SIZE):
+        for i in range(SENSOR_NUM):
             flat_data[i].extend([da['data'][i] for da in li])
 
-    for i in range(FEAT_SIZE):
+    for i in range(SENSOR_NUM):
         ranges.append(np.max(flat_data[i]) - np.min(flat_data[i]))
         mins.append(np.min(flat_data[i]))
         stds.append(np.std(flat_data[i]))
@@ -111,7 +101,7 @@ def filter(data:dict):
     for key in data.keys():
         li = data[key]
         for it in li:
-            for i in range(FEAT_SIZE):
+            for i in range(SENSOR_NUM):
                 # it['data'][i] = (it['data'][i] - means[i]) / ranges[i]
                 it['data'][i] = (it['data'][i] - means[i]) / stds[i]
     # print(data)
@@ -127,7 +117,7 @@ def parseLocal(samples:list, window_size:int):
             window = window_size
         localRange = samples[i - window:i]
         for item in samples[i - window:i]:
-            pureData = [[]] * FEAT_SIZE
+            pureData = [[]] * SENSOR_NUM
 
     return samples
 
@@ -135,7 +125,7 @@ def filter_local(data:dict):
     print(data.keys())
     idles = [da['data'] for da in data[-1]]
     idle_data = []
-    for i in range(FEAT_SIZE):
+    for i in range(SENSOR_NUM):
         idle_data.append([da[i] for da in idles])
     
     means = [np.mean(li) for li in idle_data]
@@ -145,15 +135,15 @@ def filter_local(data:dict):
     mins = []
     stds = []
     flat_data = []
-    for i in range(FEAT_SIZE):
+    for i in range(SENSOR_NUM):
         flat_data.append([])
 
     for key in data.keys():
         li = data[key]
-        for i in range(FEAT_SIZE):
+        for i in range(SENSOR_NUM):
             flat_data[i].extend([da['data'][i] for da in li])
 
-    for i in range(FEAT_SIZE):
+    for i in range(SENSOR_NUM):
         ranges.append(np.max(flat_data[i]) - np.min(flat_data[i]))
         mins.append(np.min(flat_data[i]))
         stds.append(np.std(flat_data[i]))
@@ -164,7 +154,7 @@ def filter_local(data:dict):
     for key in data.keys():
         li = data[key]
         for it in li:
-            for i in range(FEAT_SIZE):
+            for i in range(SENSOR_NUM):
                 # it['data'][i] = (it['data'][i] - means[i]) / ranges[i]
                 it['data'][i] = (it['data'][i] - means[i]) / stds[i]
     # print(data)
@@ -192,12 +182,13 @@ def extract(filename:str, no:int):
     cursor = 0
     validSamples = []
     for pre in presses:
-        if cursor == len(samples):
+        if cursor >= len(samples):
             break
         if pre[0] < samples[cursor].tp:
             continue
         elif pre[0] > samples[cursor].tp:
             cursor += 1
+            continue
         if pre[1] <= PRESS_THRESHOLD:
             samples[cursor].label = no
         else:
@@ -252,12 +243,16 @@ def extract(filename:str, no:int):
     # return windows
     return validSamples
 
+# use local extractor
+
+
+
 if __name__ == '__main__':
     data = {}
 
-    for i in range(-1, FEAT_SIZE):
+    for i in range(-1, CLASS_NUM):
         data[i] = []
-    for i in range(FEAT_SIZE):
+    for i in range(CLASS_NUM):
         print("Extracting %s_%d" % (sys.argv[1], i))
         samples = extract(sys.argv[1], i)
         for sample in samples:

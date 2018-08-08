@@ -1,8 +1,11 @@
+from sys import argv
+
+from matplotlib import pyplot as plt
+
 from extract import extract
 from feature import getFeature
-from sys import argv
-from matplotlib import pyplot as plt
-# from keras.layers import Conv1D
+
+# ! deprecated
 
 GROUP_SIZE = 10
 

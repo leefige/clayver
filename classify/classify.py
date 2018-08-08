@@ -1,23 +1,27 @@
 import os, sys
 current_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_dir)
+sys.path.append(os.path.dirname(current_dir))
 
-from sys import argv
-import numpy as np
 from random import shuffle
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier as KNN
-from sklearn.tree import DecisionTreeClassifier as DT
-from sklearn.naive_bayes import BernoulliNB as NB
-from sklearn.model_selection import train_test_split
-from sklearn.externals import joblib
-from utility import *
+from sys import argv
 
-MODEL_DIR = '../models/'
+import numpy as np
+from sklearn.externals import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB as NB
+from sklearn.neighbors import KNeighborsClassifier as KNN
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier as DT
+
+from common.utility import *
+from common.defs import *
+
+SENSOR_NUM = 6
 
 def genData(name:str, gen_idle=True):
     data = json_load(name)
-    lens = [len(data[str(i)]) for i in range(FEAT_SIZE)]
+    lens = [len(data[str(i)]) for i in range(CLASS_NUM)]
     
     avgLen = np.mean(lens)
     data_0 = data['-1']
@@ -29,7 +33,7 @@ def genData(name:str, gen_idle=True):
     if gen_idle:
         _X = [di['data'] for di in data_0]
         y = np.ones(len(data_0)) * -1
-    for i in range(FEAT_SIZE):
+    for i in range(CLASS_NUM):
         _X.extend([di['data'] for di in data[str(i)]])
         y = np.append(y, np.ones(len(data[str(i)])) * i)
     

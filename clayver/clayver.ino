@@ -7,7 +7,7 @@
 MPU9250 mpu = MPU9250();
 
 const int SERIAL_RATE = 9600;
-const int DELAY_TIME = 50;
+const int DELAY_TIME = 20;
 const int ANA_NUM = 6;
 const int DIG_NUM = 6;
 

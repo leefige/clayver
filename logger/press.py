@@ -1,14 +1,15 @@
-import datetime
-import time, sys, os.path
+import os, sys
+current_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(current_dir)
+sys.path.append(os.path.dirname(current_dir))
 
-import serial
+from common.defs import *
+import os.path
+import time
+from ctypes import c_double, cdll
 
 import numpy as np
-
-from ctypes import cdll
-from ctypes import c_double
-
-DATA_PATH = "../data/"
+import serial
 
 def read_data(data, offset):
     arr = []
@@ -27,14 +28,14 @@ def read_data1(data, offset):
 dirname = sys.argv[1]
 no = sys.argv[2]
 
-if not os.path.isdir(DATA_PATH + dirname):
-    os.mkdir(DATA_PATH + dirname)
+if not os.path.isdir(DATA_DIR + dirname):
+    os.mkdir(DATA_DIR + dirname)
 
-if not os.path.isdir(DATA_PATH + dirname + "/" + no):
-    os.mkdir(DATA_PATH + dirname + "/" + no)
+if not os.path.isdir(DATA_DIR + dirname + "/" + no):
+    os.mkdir(DATA_DIR + dirname + "/" + no)
 
 ser = serial.Serial('COM6', 115200)
-raw_datafile = open(DATA_PATH + dirname + "/" + no + '/' + 'press.txt', 'w')
+raw_datafile = open(DATA_DIR + dirname + "/" + no + '/' + 'press.txt', 'w')
 ser.write(b'\x01')
 
 count = 0

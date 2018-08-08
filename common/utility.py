@@ -1,7 +1,9 @@
-import json as _J
+import os, sys
+current_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(current_dir)
 
-FEAT_SIZE = 6
-PARSED_DIR = "../parsed/"
+import json as _J
+from defs import *
 
 def json_load(filename:str):
     with open(PARSED_DIR + filename + ".json", 'r', encoding='utf8') as fin:

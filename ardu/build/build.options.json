@@ -1,0 +1,10 @@
+{
+  "builtInLibrariesFolders": "C:\\Develop\\Arduino\\libraries",
+  "customBuildProperties": "build.path=c:\\Users\\Liyf\\OneDrive\\Desktop\\Summer\\clayver\\proj\\ardu\\build,build.warn_data_percentage=75,runtime.tools.avrdude.path=C:\\Develop\\Arduino\\hardware\\tools\\avr,runtime.tools.avr-gcc.path=C:\\Develop\\Arduino\\hardware\\tools\\avr,runtime.tools.arduinoOTA.path=C:\\Develop\\Arduino\\hardware\\tools\\avr",
+  "fqbn": "arduino:avr:pro:cpu=16MHzatmega328",
+  "hardwareFolders": "C:\\Develop\\Arduino\\hardware,C:\\Users\\Liyf\\AppData\\Local\\Arduino15\\packages",
+  "otherLibrariesFolders": "C:\\Users\\Liyf\\Documents\\Arduino\\libraries",
+  "runtime.ide.version": "10805",
+  "sketchLocation": "c:\\Users\\Liyf\\OneDrive\\Desktop\\Summer\\clayver\\proj\\clayver\\clayver.ino",
+  "toolsFolders": "C:\\Develop\\Arduino\\tools-builder,C:\\Develop\\Arduino\\hardware\\tools\\avr,C:\\Users\\Liyf\\AppData\\Local\\Arduino15\\packages"
+}

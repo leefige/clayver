@@ -1,5 +1,7 @@
-from sklearn.cluster import KMeans
 import numpy as np
+from sklearn.cluster import KMeans
+
+# ! deprecated
 
 def getFeature(windows):
     for anaNo in range(6):

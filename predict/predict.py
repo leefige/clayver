@@ -1,15 +1,17 @@
 import os, sys
 current_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(current_dir)
-sys.path.append("..")
+sys.path.append(os.path.dirname(current_dir))
 
-from logger.serialUtility import *
-from classify.classify import MODEL_DIR
-from logger.logger import PORT_NAME, SENSOR_NUM, Task_Read, ARDU_DELAY
+from common.defs import *
+from common.serialUtility import *
+from task.task import Task_Read
 from queue import Queue
 from threading import Thread
 from sklearn.externals import joblib
 import numpy as np
+
+SENSOR_NUM = 6
 
 READ_TIMEOUT = 5
 WINDOW_SIZE = int(1 / ARDU_DELAY)
@@ -19,7 +21,7 @@ IDLE_SIZE = 3 * WINDOW_SIZE
 
 print("Initializing...")
 
-clf = joblib.load(MODEL_DIR + "KNN.pkl")
+clf = joblib.load(MODEL_DIR + "NB.pkl")
 
 q_read = Queue()
 readTask = Task_Read([q_read])
