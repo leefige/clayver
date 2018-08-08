@@ -1,0 +1,88 @@
+#include <MPU9250.h>
+
+#include <Adafruit_BMP280.h>
+
+#include <Arduino.h>
+
+MPU9250 mpu = MPU9250();
+
+const int SERIAL_RATE = 9600;
+const int DELAY_TIME = 50;
+const int ANA_NUM = 6;
+const int DIG_NUM = 6;
+
+const int ANA_PORTS[ANA_NUM] = {A0, A1, A2, A3, A6, A7};
+const int DIG_PORTS[DIG_NUM] = {2, 3, 4, 5, 6, 7};
+
+int signals[ANA_NUM] = {0};
+
+void setup()
+{
+    for (int i = 0; i <DIG_NUM; i++) {
+        pinMode(DIG_PORTS[i], OUTPUT);
+    }
+    Serial.begin(SERIAL_RATE);
+    if (mpu.begin() != 0) {  
+        Serial.println("Could not find a valid MPU9250 sensor, check wiring!");
+    }
+}
+
+void loop()
+{
+    for (int i = 0; i <DIG_NUM; i++) {
+        digitalWrite(DIG_PORTS[i], HIGH);
+    }
+    String output;
+    for (int i = 0; i < ANA_NUM; i++) {
+        signals[i] = analogRead(ANA_PORTS[i]);
+        output += String(signals[i]) + " ";
+    }
+    // output += String(signals[0]) + ' ' + String(signals[1]);
+    // output = String(analogRead(A7)) + ", " + String(analogRead(A6));
+    Serial.println(output);
+    delay(DELAY_TIME);
+
+    //Accel
+    mpu.set_accel_range(RANGE_4G);
+    mpu.get_accel();
+    Serial.print("X: ");  Serial.print(mpu.x);
+    Serial.print(" Y: "); Serial.print(mpu.y);
+    Serial.print(" Z: "); Serial.print(mpu.z);
+    
+    mpu.get_accel_g();
+    Serial.print(" X_g: "); Serial.print(mpu.x_g,2); 
+    Serial.print(" Y_g: "); Serial.print(mpu.y_g,2); 
+    Serial.print(" Z_g: "); Serial.print(mpu.z_g,2);  Serial.println(" G");
+
+    //Gyro
+    mpu.set_gyro_range(RANGE_GYRO_250);
+    mpu.get_gyro();
+    Serial.print("GX: ");  Serial.print(mpu.gx); 
+    Serial.print(" GY: "); Serial.print(mpu.gy); 
+    Serial.print(" GZ: "); Serial.print(mpu.gz);
+
+    mpu.get_gyro_d();
+    Serial.print(" GX_g: "); Serial.print(mpu.gx_d,2); 
+    Serial.print(" GY_g: "); Serial.print(mpu.gy_d,2); 
+    Serial.print(" GZ_g: "); Serial.print(mpu.gz_d,2); Serial.println(" º/s");
+
+    //Mag
+    mpu.set_mag_scale(SCALE_14_BITS);
+    mpu.set_mag_speed(MAG_8_Hz);
+    if(!mpu.get_mag()){
+        Serial.print("MX: ");  Serial.print(mpu.mx); 
+        Serial.print(" MY: "); Serial.print(mpu.my); 
+        Serial.print(" MZ: "); Serial.print(mpu.mz);
+
+        mpu.get_mag_t();
+        Serial.print(" MX_t: "); Serial.print(mpu.mx_t,2); 
+        Serial.print(" MY_t: "); Serial.print(mpu.my_t,2); 
+        Serial.print(" MZ_t: "); Serial.print(mpu.mz_t,2); Serial.println(" uT");
+    }
+    else{
+        // |X|+|Y|+|Z| must be < 4912μT to sensor measure correctly 
+        Serial.println("Overflow no magnetometro.");
+    }
+    Serial.println("");
+    delay(1000);
+}

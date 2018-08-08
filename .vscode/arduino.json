@@ -1,5 +1,5 @@
 {
-    "sketch": "ardu\\clayver.ino",
+    "sketch": "clayver\\clayver.ino",
     "board": "arduino:avr:pro",
     "port": "COM4",
     "output": "./ardu/build",
