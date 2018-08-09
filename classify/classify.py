@@ -21,21 +21,30 @@ SENSOR_NUM = 6
 
 def genData(name:str, gen_idle=True):
     data = json_load(name)
-    lens = [len(data[str(i)]) for i in range(CLASS_NUM)]
+
+    classes = {}
+    for i in range(-1, CLASS_NUM):
+        classes[i] = []
+    for sp in data:
+        key = sp['label']
+        classes[key].append(sp['data'])
     
-    avgLen = np.mean(lens)
-    data_0 = data['-1']
-    shuffle(data_0)
-    data_0 = data_0[:int(avgLen)]
+    lens = []
+    for i in range(CLASS_NUM):
+        lens.append(len(classes[i]))
+    avrLen = int(np.mean(lens))
+
+    shuffle(classes[-1])
+    data_0 = classes[-1][:avrLen]
 
     _X = []
     y = []
     if gen_idle:
-        _X = [di['data'] for di in data_0]
+        _X = data_0
         y = np.ones(len(data_0)) * -1
     for i in range(CLASS_NUM):
-        _X.extend([di['data'] for di in data[str(i)]])
-        y = np.append(y, np.ones(len(data[str(i)])) * i)
+        _X.extend(classes[i])
+        y = np.append(y, np.ones(len(classes[i])) * i)
     
     X = np.array(_X)
     return X, y
@@ -59,7 +68,7 @@ def classify(X, y, clf):
     return cnt / len(y_test)
 
 if __name__ == '__main__':
-    X, y = genData(argv[1], True)
+    X, y = genData(argv[1], False)
     clas = []
     clas.append(["KNN", KNN(n_neighbors=6)])
     clas.append(["SVC", SVC()])
@@ -71,7 +80,7 @@ if __name__ == '__main__':
     bestPre = [0] * 4
     for clf in clas:
         pres = []
-        for i in range(5000):
+        for i in range(2000):
             p = classify(X, y, clf[1])
             if p > bestPre[clfIdx]:
                 bestPre[clfIdx] = p
