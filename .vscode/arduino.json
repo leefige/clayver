@@ -2,6 +2,6 @@
     "sketch": "clayver\\clayver.ino",
     "board": "arduino:avr:pro",
     "port": "COM4",
-    "output": "./ardu/build",
+    "output": "./hardware/build",
     "configuration": "cpu=16MHzatmega328"
 }
