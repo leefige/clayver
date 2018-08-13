@@ -10,9 +10,7 @@ from common.sample import Sample
 from matplotlib import pyplot as plt
 import numpy as np
 
-WINDOW_SIZE = 20
-PRESS_THRESHOLD = 3000
-DELTA_STD = 1e-4
+PRESS_THRESHOLD = 2950
 
 def splitLine(line):
     line = line.strip()
@@ -118,42 +116,14 @@ def extract(filename:str, no:int):
 
 # ---------------------------------------------------------------------
 
-def filter_local(data:list):
-    sorted(data, key=lambda x : x['tp'])
-    res = []
-    for i in range(WINDOW_SIZE, len(data)):
-        mean = []
-        std = []
-        curLi = data[i - WINDOW_SIZE:i]
-        for j in range(ADC_NUM):
-            mean.append(np.mean([sp['data'][j] for sp in curLi]))
-            std.append(np.std([sp['data'][j] for sp in curLi]))
-        point = {}
-        point['label'] = data[i]['label']
-        point['tp'] = data[i]['tp']
-        point['raw'] = data[i]['data']
-        point['data'] = []
-        for j in range(ADC_NUM):
-            dividor = std[j] if std[j] != 0 else DELTA_STD
-            point['data'].append((data[i]['data'][j] - mean[j]) / dividor)
-        for j in range(ADC_NUM, SENSOR_NUM):
-            point['data'].append(data[i]['data'][j] - data[i - 1]['data'][j])
-        res.append(point)
-    return res
-
-
 if __name__ == '__main__':
     data = []
 
-    for i in range(CLASS_NUM):
+    for i in range(TEST_POINT_NUM):
         print("Extracting %s_%d" % (sys.argv[1], i))
         samples = extract(sys.argv[1], i)
         data.extend([spl.__dict__ for spl in samples])
     print("")
 
     print("raw data len: %d" % len(data))
-    print(data[-1])
-    data = filter_local(data)
-    print(data[-1])
-    print("normalized data len: %d" % len(data))
     json_dump(data, sys.argv[1])

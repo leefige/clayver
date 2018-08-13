@@ -19,14 +19,43 @@ from common.defs import *
 
 SENSOR_NUM = 6
 
+def filter_local(data:list):
+    sorted(data, key=lambda x : x['tp'])
+    res = []
+    for i in range(WINDOW_SIZE, len(data)):
+        mean = []
+        std = []
+        curLi = data[i - WINDOW_SIZE:i]
+        for j in range(ADC_NUM):
+            mean.append(np.mean([sp['data'][j] for sp in curLi]))
+            std.append(np.std([sp['data'][j] for sp in curLi]))
+        point = {}
+        point['label'] = data[i]['label']
+        point['tp'] = data[i]['tp']
+        point['raw'] = data[i]['data']
+        point['data'] = []
+        for j in range(ADC_NUM):
+            dividor = std[j] if std[j] != 0 else DELTA_STD
+            point['data'].append((data[i]['data'][j] - mean[j]) / dividor)
+        for j in range(ADC_NUM, SENSOR_NUM):
+            point['data'].append(data[i]['data'][j] - data[i - 1]['data'][j])
+        res.append(point)
+    return res
+
 def genData(name:str, gen_idle=True):
     data = json_load(name)
+    
+    print("raw data len: %d" % len(data))
+    data = filter_local(data)
+    print("normalized data len: %d" % len(data))
 
     classes = {}
     for i in range(-1, CLASS_NUM):
         classes[i] = []
     for sp in data:
         key = sp['label']
+        if key not in classes.keys():
+            continue
         classes[key].append(sp['data'])
     
     lens = []
@@ -40,18 +69,17 @@ def genData(name:str, gen_idle=True):
     _X = []
     y = []
     if gen_idle:
-        _X = data_0
+        _X = [da[:SENSOR_NUM] for da in data_0]
         y = np.ones(len(data_0)) * -1
     for i in range(CLASS_NUM):
-        _X.extend(classes[i])
+        _X.extend([da[:SENSOR_NUM] for da in classes[i]])
         y = np.append(y, np.ones(len(classes[i])) * i)
     
     X = np.array(_X)
+    y = np.array(y)
     return X, y
 
 def classify(X, y, clf):
-    # print(X.shape)
-    # print(len(y))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
     clf.fit(X_train, y_train)
@@ -69,6 +97,8 @@ def classify(X, y, clf):
 
 if __name__ == '__main__':
     X, y = genData(argv[1], False)
+    print("X.shape:", X.shape)
+    print("y.shape:", y.shape)
     clas = []
     clas.append(["KNN", KNN(n_neighbors=6)])
     clas.append(["SVC", SVC()])

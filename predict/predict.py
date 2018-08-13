@@ -11,17 +11,16 @@ from threading import Thread
 from sklearn.externals import joblib
 import numpy as np
 
-SENSOR_NUM = 6
+ADC_NUM = 6
 
 READ_TIMEOUT = 5
-WINDOW_SIZE = int(1 / ARDU_DELAY)
 IDLE_SIZE = 3 * WINDOW_SIZE
 
 # init, discard init data
 
 print("Initializing...")
 
-clf = joblib.load(MODEL_DIR + "NB.pkl")
+clf = joblib.load(MODEL_DIR + "KNN.pkl")
 
 q_read = Queue()
 readTask = Task_Read([q_read])
@@ -48,43 +47,43 @@ while True:
 # window: [[], [], [], [], [], []]
 # data: [x, x, x, x, x, x]
 def windowAdd(window:list, data:list):
-    for i in range(SENSOR_NUM):
+    for i in range(ADC_NUM):
         window[i].append(data[i])
     if len(window[0]) > 2 * WINDOW_SIZE:
-        for i in range(SENSOR_NUM):
+        for i in range(ADC_NUM):
             window[i] = window[i][-WINDOW_SIZE:]
     return window
 
-print("Collecting idle data")
-idleWindow = [[]] * SENSOR_NUM
-idleCnt = 0
-while idleCnt < IDLE_SIZE:
-    vals = q_read.get()
-    if vals:
-        windowAdd(idleWindow, vals)
-        idleCnt += 1
+# print("Collecting idle data")
+# idleWindow = [[]] * ADC_NUM
+# idleCnt = 0
+# while idleCnt < IDLE_SIZE:
+#     vals = q_read.get()
+#     if vals:
+#         windowAdd(idleWindow, vals)
+#         idleCnt += 1
 
-print("Calculating idle data")
-mean_glob = []
-std_glob = []
-for i in range(SENSOR_NUM):
-    mean_glob.append(np.mean(idleWindow[i]))
-    std_glob.append(np.std(idleWindow[i]))
-print("mean & std:")
-print(mean_glob)
-print(std_glob)
+# print("Calculating idle data")
+# mean_glob = []
+# std_glob = []
+# for i in range(ADC_NUM):
+#     mean_glob.append(np.mean(idleWindow[i]))
+#     std_glob.append(np.std(idleWindow[i]))
+# print("mean & std:")
+# print(mean_glob)
+# print(std_glob)
 
 # --------------------------------------------
 # start to predict
 
-def parseArray(arr:list):
-    global mean_glob
-    global std_glob
-    for i in range(SENSOR_NUM):
-        arr[i] = (arr[i] - mean_glob[i]) / std_glob[i]
-    return arr
+# def parseArray(arr:list):
+#     global mean_glob
+#     global std_glob
+#     for i in range(ADC_NUM):
+#         arr[i] = (arr[i] - mean_glob[i]) / std_glob[i]
+#     return arr
 
-window = [[]] * SENSOR_NUM
+window = [[]] * ADC_NUM
 
 print("Initializing first window...")
 # collect first window
@@ -93,10 +92,23 @@ while firstCnt < WINDOW_SIZE:
     vals = q_read.get()
     if vals:
         # print(vals)
-        vals = parseArray(vals)
+        # vals = parseArray(vals)
         # print(vals)
         windowAdd(window, vals)
         firstCnt += 1
+
+def dataFilter(window:list, targ:int):
+    mean = []
+    std = []
+    for j in range(ADC_NUM):
+        mean.append(np.mean(window[j][targ - WINDOW_SIZE:targ]))
+        std.append(np.std(window[j][targ - WINDOW_SIZE:targ]))
+    point = []
+    for j in range(ADC_NUM):
+        dividor = std[j] if std[j] != 0 else 1e-4
+        point.append((window[j][targ] - mean[j]) / dividor)
+    res = np.array([point])
+    return res
 
 # predict process
 # [[], [], [], [], [], []] => [[x, x, x, x, x, x], [x, x, x, x, x, x], ...]
@@ -104,9 +116,9 @@ def genFeature(window:list):
     res = []
     for i in range(WINDOW_SIZE):
         # * assert i < WINDOW_SIZE
-        res.append([window[j][i - WINDOW_SIZE] for j in range(SENSOR_NUM)])
+        res.append([window[j][i - WINDOW_SIZE] for j in range(ADC_NUM)])
     res = np.array(res)
-    assert res.shape == (WINDOW_SIZE, SENSOR_NUM)
+    assert res.shape == (WINDOW_SIZE, ADC_NUM)
     return res
 
 print("Predicting...")
@@ -117,9 +129,9 @@ while True:
     if vals == None:
         continue
     
-    vals = parseArray(vals)
+    # vals = parseArray(vals)
     windowAdd(window, vals)
-    feed = genFeature(window)
+    feed = dataFilter(window, -1)
     y = clf.predict(feed)
     # print(feed, end='\r')
     if y[-1] != lastPred:
