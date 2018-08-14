@@ -6,12 +6,14 @@ import json as _J
 from defs import *
 
 def json_loadAll():
-    dirpath, dirnames, filenames = os.walk(current_dir)
     allData = []
-    for filename in filenames:
-        name = os.path.splitext(filename)[0]
-        data = json_load(name)
-        allData.extend(data)
+    files= os.listdir(PARSED_DIR)
+    for filename in files:
+        if not os.path.isdir(filename):
+            print("reading " + filename)
+            name = os.path.splitext(filename)[0]
+            data = json_load(name)
+            allData.extend(data)
     return allData
 
 def json_load(filename:str):

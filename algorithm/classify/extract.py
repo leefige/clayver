@@ -73,7 +73,7 @@ def extract(filename:str, no:int):
         for line in fin:
             tp, vals = splitLine(line)
             if vals:
-                samples.append(Sample(tp, vals))
+                samples.append(Sample(tp=tp, vals=vals))
     
     presses = []
     with open(pressPath, 'r', encoding='utf8') as fin:
