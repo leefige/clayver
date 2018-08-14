@@ -27,11 +27,14 @@ class Window:
 
     eventType = {'idle': 0, 'click': 1, 'press': 2}
 
+    # li: list(Sample)
     def __init__(self, li:list=None):
         if li == None:
             self.samples = []
         else:
-            self.samples = list(map(Sample, li))
+            assert len(li) > 0
+            assert isinstance(li[0], Sample)
+            self.samples = li
         self.pos = None
         self.event = None
         
@@ -52,18 +55,20 @@ class Window:
             event = Window.eventType['idle']
             pos = self.samples[0].label
             if pos == -1:
+                nonIdleCnt = 0
                 for sp in self.samples[1:]:
                     if sp.label != -1:
+                        nonIdleCnt += 1
+                if nonIdleCnt > self.size() * 0.25:
                         event = Window.eventType['click']
-                        break
             else:
                 event = Window.eventType['press']
-                # idleCnt = 0
-                # for sp in self.samples[1:]:
-                #     if sp.label == -1:
-                #         idleCnt += 1
-                # if idleCnt > self.size() * 0.9:
-                #     event = Window.eventType['idle']
+                idleCnt = 0
+                for sp in self.samples[1:]:
+                    if sp.label == -1:
+                        idleCnt += 1
+                if idleCnt > 0:
+                    event = Window.eventType['idle']
             self.event = event
         return self.event
 

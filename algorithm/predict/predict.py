@@ -5,30 +5,63 @@ sys.path.append(os.path.dirname(current_dir))
 
 from common.defs import *
 from common.serialUtility import *
+from common.sample import *
 from task.task import Task_Read
 from queue import Queue
 from threading import Thread
 from sklearn.externals import joblib
 import numpy as np
 
-ADC_NUM = 6
 
 READ_TIMEOUT = 5
-IDLE_SIZE = 3 * WINDOW_SIZE
+IDLE_SIZE = 2 * WINDOW_SIZE
 
+
+def genWindow(raw:list):
+    use = raw[-WINDOW_SIZE:]
+    spl = [Sample(vals=da) for da in use]
+    return Window(spl)
+
+def genFeature(win:Window):
+    res = []
+    for i in range(ADC_NUM):
+        res.append(win.range(i))
+        res.append(win.std(i))
+    res = np.array(res)
+    return res
+
+
+# ----------------------------------------
 # init, discard init data
 
 print("Initializing...")
 
-clf = joblib.load(MODEL_DIR + "KNN.pkl")
+clf = joblib.load(MODEL_DIR + "idleKNN.pkl")
 
 q_read = Queue()
 readTask = Task_Read([q_read])
 t_read = Thread(target=readTask.run, name="thread_read")
 t_read.start()
 
+# subroutine for control
+def control():
+    while True:
+        key = input()
+        if len(key) < 1:
+            continue
+        if key[0] == 'q':
+            readTask.terminate()
+            print("Terminated!")
+            exit(0)
+        elif key[0] == 'p':
+            print("Paused! Press 'r' to resume")
+            readTask.pause()
+        elif key[0] == 'r':
+            print("Resumed. Logging...")
+            readTask.resume()
+
 # filter for initial data
-for i in range(2 * WINDOW_SIZE):
+for i in range(10):
     q_read.get(timeout=READ_TIMEOUT)
 
 while True:
@@ -36,6 +69,8 @@ while True:
     key = input()
     if key[0] == 's':
         print("Starting...")
+        c_thread = Thread(target=control, name="thread_control")
+        c_thread.start()
         break
     elif key[0] == 'q':
         readTask.terminate()
@@ -44,46 +79,14 @@ while True:
 # -----------------------------------------------
 # collect idle state data, calc mean & std
 
-# window: [[], [], [], [], [], []]
-# data: [x, x, x, x, x, x]
 def windowAdd(window:list, data:list):
     for i in range(ADC_NUM):
-        window[i].append(data[i])
-    if len(window[0]) > 2 * WINDOW_SIZE:
-        for i in range(ADC_NUM):
-            window[i] = window[i][-WINDOW_SIZE:]
+        window.append(data)
+    if len(window) > 2 * WINDOW_SIZE:
+        window = window[-WINDOW_SIZE:]
     return window
 
-# print("Collecting idle data")
-# idleWindow = [[]] * ADC_NUM
-# idleCnt = 0
-# while idleCnt < IDLE_SIZE:
-#     vals = q_read.get()
-#     if vals:
-#         windowAdd(idleWindow, vals)
-#         idleCnt += 1
-
-# print("Calculating idle data")
-# mean_glob = []
-# std_glob = []
-# for i in range(ADC_NUM):
-#     mean_glob.append(np.mean(idleWindow[i]))
-#     std_glob.append(np.std(idleWindow[i]))
-# print("mean & std:")
-# print(mean_glob)
-# print(std_glob)
-
-# --------------------------------------------
-# start to predict
-
-# def parseArray(arr:list):
-#     global mean_glob
-#     global std_glob
-#     for i in range(ADC_NUM):
-#         arr[i] = (arr[i] - mean_glob[i]) / std_glob[i]
-#     return arr
-
-window = [[]] * ADC_NUM
+rawWindow = []
 
 print("Initializing first window...")
 # collect first window
@@ -94,49 +97,32 @@ while firstCnt < WINDOW_SIZE:
         # print(vals)
         # vals = parseArray(vals)
         # print(vals)
-        windowAdd(window, vals)
+        windowAdd(rawWindow, vals)
         firstCnt += 1
-
-def dataFilter(window:list, targ:int):
-    mean = []
-    std = []
-    for j in range(ADC_NUM):
-        mean.append(np.mean(window[j][targ - WINDOW_SIZE:targ]))
-        std.append(np.std(window[j][targ - WINDOW_SIZE:targ]))
-    point = []
-    for j in range(ADC_NUM):
-        dividor = std[j] if std[j] != 0 else 1e-4
-        point.append((window[j][targ] - mean[j]) / dividor)
-    res = np.array([point])
-    return res
-
-# predict process
-# [[], [], [], [], [], []] => [[x, x, x, x, x, x], [x, x, x, x, x, x], ...]
-def genFeature(window:list):
-    res = []
-    for i in range(WINDOW_SIZE):
-        # * assert i < WINDOW_SIZE
-        res.append([window[j][i - WINDOW_SIZE] for j in range(ADC_NUM)])
-    res = np.array(res)
-    assert res.shape == (WINDOW_SIZE, ADC_NUM)
-    return res
 
 print("Predicting...")
 lastPred = -1
 processCnt = 0
+stepCnt = 0
 while True:
+    if not t_read.is_alive():
+        exit(-1)
+
     vals = q_read.get()
     if vals == None:
         continue
-    
     # vals = parseArray(vals)
-    windowAdd(window, vals)
-    feed = dataFilter(window, -1)
-    y = clf.predict(feed)
-    # print(feed, end='\r')
-    if y[-1] != lastPred:
-        lastPred = y[-1]
-        print("Predict: %d" % y[-1])
+    windowAdd(rawWindow, vals)
+    stepCnt += 1
+    if stepCnt % 5 == 0:
+        win = genWindow(rawWindow)
+        feed = genFeature(win)
+        y = clf.predict([feed])
+        if y[-1] != lastPred:
+            lastPred = y[-1]
+            print("Predict: %s" % ('idle' if y[-1] == 0 else 'click'))
+
+    # keep running sign
     tp = processCnt % 4
     if tp == 0:
         print('-', end='\r')
@@ -147,3 +133,4 @@ while True:
     else:
         print('/', end='\r')
     processCnt += 1
+    

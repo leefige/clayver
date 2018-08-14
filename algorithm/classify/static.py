@@ -24,7 +24,8 @@ def genWindows():
     
     wins = []
     for i in range(0, len(allData) - WINDOW_SIZE, 5):
-        wins.append(Window(allData[i:i + WINDOW_SIZE]))
+        spl = [Sample(obj=da) for da in allData[i:i + WINDOW_SIZE]]
+        wins.append(Window(spl))
 
     # generate pos & event
     for win in wins:
@@ -53,8 +54,8 @@ def genFeed():
 
     shuffle(idleWin)
     shuffle(nonIdleWin)
-    # idleWin = idleWin[:cnt]
-    # nonIdleWin = nonIdleWin[:cnt]
+    idleWin = idleWin[:cnt]
+    nonIdleWin = nonIdleWin[:cnt]
 
     X = []
     y = []
@@ -70,6 +71,7 @@ def genFeed():
             y.append(1)
     X = np.array(X)
     y = np.array(y)
+    print("idle cnt: %d, non idle cnt: %d" % (len(idleWin), len(nonIdleWin)))
     print("X.shape:", X.shape)
     print("y.shape:", y.shape)
     return X, y
