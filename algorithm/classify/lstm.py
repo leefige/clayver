@@ -5,7 +5,7 @@ from keras.optimizers import RMSprop
 import math
 
 DROPOUT_RATE = 0.2
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.00005
 
 def getLeastPower2(n:int):
     l = math.ceil(math.log2(n))

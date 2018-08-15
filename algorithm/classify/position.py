@@ -15,8 +15,8 @@ from keras.models import load_model
 # FEAT_LEN = 10
 FEED_LEN = 10
 
-def getData():
-    allData = json_loadAll(class_num=CLASS_NUM)
+def getData(class_num=CLASS_NUM):
+    allData = json_loadAll(class_num)
     sorted(allData, key=lambda x : x.tp)
 
     # pick out idle
@@ -110,17 +110,20 @@ def genFeature(data:list):
     label = data[-1].label if data[-1].label != -1 else CLASS_NUM
     return feed, label
 
-def classify(X, y, path=None, init_epo=None):
-    if not path:
-        lstm = LSTM_model(CLASS_NUM + 1, feed_length=FEED_LEN, feed_dim=ADC_NUM * 7)
+def classify(X, y, class_num=CLASS_NUM, init_epo=None, epo=1000):
+    if not init_epo:
+        lstm = LSTM_model(class_num + 1, feed_length=FEED_LEN, feed_dim=ADC_NUM * 7)
         lstm.fit(X, y, batch_size=64, epochs=300, validation_split=0.2)
     else:
-        lstm = load_model(path)
-        lstm.fit(X, y, batch_size=64, epochs=1000, validation_split=0.2, initial_epoch=init_epo)
-    lstm.save(MODEL_DIR + "lstm.hdf5")
+        lstm = load_model(MODEL_DIR + "lstm_%d.hdf5" % class_num)
+        lstm.fit(X, y, batch_size=64, epochs=epo, validation_split=0.2, initial_epoch=init_epo)
+    lstm.save(MODEL_DIR + "lstm_%d.hdf5" % class_num)
 
 if __name__ == '__main__':
-    allData = getData()
+    # TODO: note: class num
+    class_num = CLASS_NUM
+    allData = getData(class_num)
+    print("Preparing data...")
     Xy = []
     for i in range(FEED_LEN + 1, len(allData)):
         feed, label = genFeature(allData[i-(FEED_LEN + 1):i])
@@ -132,6 +135,8 @@ if __name__ == '__main__':
 
     X = np.array(X)
     y = np.array(y)
-    y = to_categorical(y, CLASS_NUM + 1)
+    y = to_categorical(y, class_num + 1)
     print(y.shape)
-    classify(X, y, MODEL_DIR + "lstm.hdf5", 300)
+
+    print("Start to classify...")
+    classify(X, y, class_num=class_num, init_epo=1000, epo=1300)

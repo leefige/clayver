@@ -81,11 +81,11 @@ def genFeature_lstm(data:list):
 
 # ----------------------------------------
 # init, discard init data
-
+class_num = CLASS_NUM
 print("Initializing...")
 
 clf = joblib.load(MODEL_DIR + "idleKNN.pkl")
-lstm = load_model(MODEL_DIR + "lstm.hdf5")
+lstm = load_model(MODEL_DIR + "lstm_%d.hdf5" % class_num)
 
 q_read = Queue()
 readTask = Task_Read([q_read])
