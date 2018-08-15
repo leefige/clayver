@@ -10,12 +10,13 @@ from common.sample import *
 from common.utility import *
 import matplotlib.pyplot as plt
 from keras.utils import to_categorical
+from keras.models import load_model
 
 # FEAT_LEN = 10
 FEED_LEN = 10
 
 def getData():
-    allData = json_loadAll()
+    allData = json_loadAll(class_num=CLASS_NUM)
     sorted(allData, key=lambda x : x.tp)
 
     # pick out idle
@@ -106,18 +107,22 @@ def genFeature(data:list):
     assert len(feed) == FEED_LEN
     # if data[-1].label == -1:
     #     print(data[-1].label)
-    label = data[-1].label if data[-1].label != -1 else TEST_POINT_NUM
+    label = data[-1].label if data[-1].label != -1 else CLASS_NUM
     return feed, label
 
-def classify(X, y):
-    lstm = LSTM_model(TEST_POINT_NUM + 1, feed_length=FEED_LEN, feed_dim=ADC_NUM * 7)
-    lstm.fit(X, y, batch_size=64, epochs=300, validation_split=0.2)
-    lstm.save(current_dir + "/lstm.hdf5")
+def classify(X, y, path=None, init_epo=None):
+    if not path:
+        lstm = LSTM_model(CLASS_NUM + 1, feed_length=FEED_LEN, feed_dim=ADC_NUM * 7)
+        lstm.fit(X, y, batch_size=64, epochs=300, validation_split=0.2)
+    else:
+        lstm = load_model(path)
+        lstm.fit(X, y, batch_size=64, epochs=1000, validation_split=0.2, initial_epoch=init_epo)
+    lstm.save(MODEL_DIR + "lstm.hdf5")
 
 if __name__ == '__main__':
     allData = getData()
     Xy = []
-    for i in range(FEED_LEN + 1, len(allData), 3):
+    for i in range(FEED_LEN + 1, len(allData)):
         feed, label = genFeature(allData[i-(FEED_LEN + 1):i])
         Xy.append([feed, label])
     
@@ -127,6 +132,6 @@ if __name__ == '__main__':
 
     X = np.array(X)
     y = np.array(y)
-    y = to_categorical(y, TEST_POINT_NUM + 1)
+    y = to_categorical(y, CLASS_NUM + 1)
     print(y.shape)
-    classify(X, y)
+    classify(X, y, MODEL_DIR + "lstm.hdf5", 300)

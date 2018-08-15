@@ -16,7 +16,7 @@ def json_dump(obj, filename:str):
         _J.dump(obj, fout, ensure_ascii=False)
     return obj
 
-def json_loadAll():
+def json_loadAll(class_num=None):
     allData = []
     files= os.listdir(PARSED_DIR)
     for filename in files:
@@ -24,5 +24,11 @@ def json_loadAll():
             print("reading " + filename)
             name = os.path.splitext(filename)[0]
             data = json_load(name)
+            if class_num:
+                sorted(data, key=lambda x: x['tp'])
+                for i in range(len(data)):
+                    if data[i]['label'] == 6:
+                        data = data[:i]
+                        break
             allData.extend(data)
     return [Sample(obj=da) for da in allData]

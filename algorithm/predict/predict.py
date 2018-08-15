@@ -11,10 +11,11 @@ from queue import Queue
 from threading import Thread
 from sklearn.externals import joblib
 import numpy as np
-
+from keras.models import load_model
 
 READ_TIMEOUT = 5
 IDLE_SIZE = 2 * WINDOW_SIZE
+FEED_LEN = 10
 
 
 def genWindow(raw:list):
@@ -31,12 +32,60 @@ def genFeature(win:Window):
     return res
 
 
+def genFeature_lstm_idle(spl:Sample):
+    # get idle data
+    idleMean = []
+    idleStd = []
+    idleRange = []
+    for i in range(ADC_NUM):
+        tmpLi = [idl[i] for idl in spl.relatedIdle]
+        idleMean.append(np.mean(tmpLi))
+        idleStd.append(np.std(tmpLi))
+        idleRange.append(max(tmpLi) - min(tmpLi))
+    
+    # generate feature
+    res = []
+    for i in range(ADC_NUM):
+        res.append(idleStd[i])
+        res.append(idleRange[i])
+        res.append(spl[i] - idleMean[i])
+    assert len(res) == ADC_NUM * 3
+    return res
+
+# data: non-idle list
+def genFeature_lstm(data:list):
+    assert len(data) == FEED_LEN + 1
+    mean = []
+    std = []
+    rang = []
+    for i in range(ADC_NUM):
+        tmpLi = [da[i] for da in data]
+        mean.append(np.mean(tmpLi))
+        std.append(np.std(tmpLi))
+        rang.append(max(tmpLi) - min(tmpLi))
+
+    feed = []
+    for i in range(1, len(data)):
+        res = genFeature_lstm_idle(data[i])
+        for j in range(ADC_NUM):
+            res.append(std[j])
+            res.append(rang[j])
+            res.append(data[i][j] - data[i-1][j])
+            res.append(data[i][j] - mean[j])
+        assert len(res) == ADC_NUM * 7
+        feed.append(res)
+    assert len(feed) == FEED_LEN
+    # if data[-1].label == -1:
+    #     print(data[-1].label)
+    return feed
+
 # ----------------------------------------
 # init, discard init data
 
 print("Initializing...")
 
 clf = joblib.load(MODEL_DIR + "idleKNN.pkl")
+lstm = load_model(MODEL_DIR + "lstm.hdf5")
 
 q_read = Queue()
 readTask = Task_Read([q_read])
@@ -101,6 +150,7 @@ while firstCnt < WINDOW_SIZE:
         firstCnt += 1
 
 print("Predicting...")
+curIdle = genWindow(rawWindow).samples[-(FEED_LEN+1):]
 lastPred = -1
 processCnt = 0
 stepCnt = 0
@@ -118,9 +168,20 @@ while True:
         win = genWindow(rawWindow)
         feed = genFeature(win)
         y = clf.predict([feed])
+        if y[-1] == 0:
+            curIdle = win.samples[-(FEED_LEN+1):]
         if y[-1] != lastPred:
             lastPred = y[-1]
-            print("Predict: %s" % ('idle' if y[-1] == 0 else 'click'))
+            print("Predict: %s" % ('idle' if y[-1] == 0 else 'click'), end=('\n' if y[-1] == 0 else ' '))
+            if y[-1] != 0:
+                samples = win.samples[-(FEED_LEN+1):]
+                for sp in samples:
+                    sp.setRelated(curIdle)
+                feed = genFeature_lstm(samples)
+                # print(feed)
+                X = np.array([feed])
+                y = lstm.predict(X)
+                print(np.argmax(y[-1]))
 
     # keep running sign
     tp = processCnt % 4
