@@ -31,6 +31,32 @@ def genFeature(win:Window):
     res = np.array(res)
     return res
 
+# data: non-idle list
+def genFeature_lstm_event(data:list):
+    assert len(data) == FEED_LEN + 1
+    mean = []
+    std = []
+    rang = []
+    for i in range(ADC_NUM):
+        tmpLi = [da[i] for da in data]
+        mean.append(np.mean(tmpLi))
+        std.append(np.std(tmpLi))
+        rang.append(max(tmpLi) - min(tmpLi))
+
+    feed = []
+    for i in range(1, len(data)):
+        res = genFeature_lstm_idle(data[i])
+        for j in range(ADC_NUM):
+            res.append(std[j])
+            res.append(rang[j])
+            res.append(data[i][j] - data[i-1][j])
+            res.append(data[i][j] - mean[j])
+        assert len(res) == ADC_NUM * 7
+        feed.append(res)
+    assert len(feed) == FEED_LEN
+    # if data[-1].label == -1:
+    #     print(data[-1].label)
+    return feed
 
 def genFeature_lstm_idle(spl:Sample):
     # get idle data
@@ -86,6 +112,7 @@ print("Initializing...")
 
 clf = joblib.load(MODEL_DIR + "idleKNN.pkl")
 lstm = load_model(MODEL_DIR + "lstm_%d.hdf5" % class_num)
+lstm_event = load_model(MODEL_DIR + "lstm_2.hdf5")
 
 q_read = Queue()
 readTask = Task_Read([q_read])
@@ -166,14 +193,27 @@ while True:
     stepCnt += 1
     if stepCnt % 5 == 0:
         win = genWindow(rawWindow)
-        feed = genFeature(win)
-        y = clf.predict([feed])
-        if y[-1] == 0:
+        # feed = genFeature(win)
+        # y = clf.predict([feed])
+        # y_event = y[-1]
+
+# -------
+        samples = win.samples[-(FEED_LEN+1):]
+        for sp in samples:
+            sp.setRelated(curIdle)
+        feed = genFeature_lstm(samples)
+        # print(feed)
+        X = np.array([feed])
+        y = lstm_event.predict(X)
+        y_event = np.argmax(y[-1])
+# --------
+
+        if y_event == 0:
             curIdle = win.samples[-(FEED_LEN+1):]
-        if y[-1] != lastPred:
-            lastPred = y[-1]
-            print("Predict: %s" % ('idle' if y[-1] == 0 else 'click'), end=('\n' if y[-1] == 0 else ' '))
-            if y[-1] != 0:
+        if y_event != lastPred:
+            lastPred = y_event
+            print("Predict: %s" % ('idle' if y_event == 0 else 'click'), end=('\n' if y_event == 0 else ' '))
+            if y_event != 0:
                 samples = win.samples[-(FEED_LEN+1):]
                 for sp in samples:
                     sp.setRelated(curIdle)
