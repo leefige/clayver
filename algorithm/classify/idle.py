@@ -20,11 +20,11 @@ from common.sample import *
 
 def genWindows():
     allData = json_loadAll()
-    sorted(allData, key=lambda x : x['tp'])
+    sorted(allData, key=lambda x : x.tp)
     
     wins = []
     for i in range(0, len(allData) - WINDOW_SIZE, 5):
-        spl = [Sample(obj=da) for da in allData[i:i + WINDOW_SIZE]]
+        spl = allData[i:i + WINDOW_SIZE]
         wins.append(Window(spl))
 
     # generate pos & event

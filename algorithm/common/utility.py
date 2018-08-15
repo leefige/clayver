@@ -4,17 +4,7 @@ sys.path.append(current_dir)
 
 import json as _J
 from defs import *
-
-def json_loadAll():
-    allData = []
-    files= os.listdir(PARSED_DIR)
-    for filename in files:
-        if not os.path.isdir(filename):
-            print("reading " + filename)
-            name = os.path.splitext(filename)[0]
-            data = json_load(name)
-            allData.extend(data)
-    return allData
+from sample import Sample
 
 def json_load(filename:str):
     with open(PARSED_DIR + filename + ".json", 'r', encoding='utf8') as fin:
@@ -25,3 +15,14 @@ def json_dump(obj, filename:str):
     with open(PARSED_DIR + filename + ".json", 'w', encoding='utf8') as fout:
         _J.dump(obj, fout, ensure_ascii=False)
     return obj
+
+def json_loadAll():
+    allData = []
+    files= os.listdir(PARSED_DIR)
+    for filename in files:
+        if not os.path.isdir(filename):
+            print("reading " + filename)
+            name = os.path.splitext(filename)[0]
+            data = json_load(name)
+            allData.extend(data)
+    return [Sample(obj=da) for da in allData]

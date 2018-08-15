@@ -7,6 +7,7 @@ import numpy as np
 
 class Sample:
     def __init__(self, obj:dict=None, tp:int=None, vals:list=None):
+        self.relatedIdle= None
         if obj == None:
             self.tp = tp
             self.label = -1
@@ -23,6 +24,9 @@ class Sample:
         assert index >= 0
         return self.data[index]
 
+    def setRelated(self, related_idle_list:list):
+        self.relatedIdle = related_idle_list
+
 class Window:
 
     eventType = {'idle': 0, 'click': 1, 'press': 2}
@@ -33,7 +37,13 @@ class Window:
             self.samples = []
         else:
             assert len(li) > 0
-            assert isinstance(li[0], Sample)
+            # ! why 'isinstance' doesn't work: 
+            # ! <sample.Sample object at 0x0000028989E9E9E8>
+            # ! <common.sample.Sample object at 0x00000183A22A97F0>
+            # ! what has been packed to Sample in utility.py is sample.Sample
+            # ! but here is common.sample.Sample
+            # ! STUPID!!!
+            # assert isinstance(li[0], Sample)
             self.samples = li
         self.pos = None
         self.event = None
