@@ -121,7 +121,7 @@ def classify(X, y, class_num=CLASS_NUM, init_epo=None, epo=1000):
 
 if __name__ == '__main__':
     # TODO: note: class num
-    class_num = CLASS_NUM
+    class_num = TEST_POINT_NUM
     allData = getData(class_num)
     print("Preparing data...")
     Xy = []
@@ -139,4 +139,4 @@ if __name__ == '__main__':
     print(y.shape)
 
     print("Start to classify...")
-    classify(X, y, class_num=class_num, init_epo=1000, epo=1300)
+    classify(X, y, class_num=class_num, epo=600, init_epo=300)
