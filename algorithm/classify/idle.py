@@ -13,6 +13,7 @@ from sklearn.naive_bayes import BernoulliNB as NB
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier as DT
+import matplotlib.pyplot as plt
 
 from common.utility import *
 from common.defs import *
@@ -21,6 +22,11 @@ from common.sample import *
 def genWindows():
     allData = json_loadAll()
     sorted(allData, key=lambda x : x.tp)
+
+    for i in range(ADC_NUM):
+        tp = [da[i] for da in allData]
+        plt.plot(tp)
+    plt.show()
     
     wins = []
     for i in range(0, len(allData) - WINDOW_SIZE, 5):

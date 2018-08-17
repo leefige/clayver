@@ -193,35 +193,38 @@ while True:
     stepCnt += 1
     if stepCnt % 5 == 0:
         win = genWindow(rawWindow)
-        # feed = genFeature(win)
-        # y = clf.predict([feed])
-        # y_event = y[-1]
+        feed = genFeature(win)
+        y = clf.predict([feed])
+        y_event = y[-1]
 
 # -------
-        samples = win.samples[-(FEED_LEN+1):]
-        for sp in samples:
-            sp.setRelated(curIdle)
-        feed = genFeature_lstm(samples)
-        # print(feed)
-        X = np.array([feed])
-        y = lstm_event.predict(X)
-        y_event = np.argmax(y[-1])
+        # samples = win.samples[-(FEED_LEN+1):]
+        # for sp in samples:
+        #     sp.setRelated(curIdle)
+        # feed = genFeature_lstm(samples)
+        # # print(feed)
+        # X = np.array([feed])
+        # y = lstm_event.predict(X)
+        # y_event = np.argmax(y[-1])
 # --------
 
         if y_event == 0:
             curIdle = win.samples[-(FEED_LEN+1):]
         if y_event != lastPred:
-            lastPred = y_event
-            print("Predict: %s" % ('idle' if y_event == 0 else 'click'), end=('\n' if y_event == 0 else ' '))
-            if y_event != 0:
-                samples = win.samples[-(FEED_LEN+1):]
-                for sp in samples:
-                    sp.setRelated(curIdle)
-                feed = genFeature_lstm(samples)
-                # print(feed)
-                X = np.array([feed])
-                y = lstm.predict(X)
-                print(np.argmax(y[-1]))
+            samples = win.samples[-(FEED_LEN+1):]
+            for sp in samples:
+                sp.setRelated(curIdle)
+            feed = genFeature_lstm(samples)
+            # print(feed)
+            X = np.array([feed])
+            y = lstm.predict(X)
+            # re-estimate
+            if np.argmax(y[-1]) == class_num:
+                y_event = 0
+
+            if y_event != lastPred:
+                lastPred = y_event
+                print("Predict: %s" % ('idle' if y_event == 0 else ('click\a` %d' % np.argmax(y[-1]))))
 
     # keep running sign
     tp = processCnt % 4

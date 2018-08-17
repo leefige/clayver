@@ -164,4 +164,4 @@ if __name__ == '__main__':
     print(y.shape)
 
     print("Start to classify...")
-    classify(X, y, class_num=class_num, epo=300)
+    classify(X, y, class_num=class_num, epo=600, init_epo=300)
