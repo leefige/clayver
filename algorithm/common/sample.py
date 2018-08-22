@@ -27,6 +27,8 @@ class Sample:
     def setRelated(self, related_idle_list:list):
         self.relatedIdle = related_idle_list
 
+
+# used to manage a window of samples
 class Window:
 
     eventType = {'idle': 0, 'click': 1, 'press': 2}
@@ -45,12 +47,13 @@ class Window:
             # ! STUPID!!!
             # assert isinstance(li[0], Sample)
             self.samples = li
-        self.pos = None
-        self.event = None
+        self.pos = None     # position: 0, 1, ..., 5 (, 6, ..., 13 )  
+        self.event = None   # event: idle, click, press(not used currently)
         
     def add(self, pt:Sample):
         self.samples.append(pt)
     
+    # decide event & position
     def decide(self):
         if self.pos == None:
             pos = -1
@@ -100,11 +103,3 @@ class Window:
     
     def std(self, idx:int):
         return np.std([sp[idx] for sp in self.samples])
-
-class IdleState:
-    def __init__(self, idle:Window):
-        self.mean = [idle.mean(i) for i in range(SENSOR_NUM)]
-        self.max = [idle.max(i) for i in range(SENSOR_NUM)]
-        self.min = [idle.min(i) for i in range(SENSOR_NUM)]
-        self.range = [(self.max[i] - self.min[i]) for i in range(SENSOR_NUM)]
-        self.std = [idle.std(i) for i in range(SENSOR_NUM)]
