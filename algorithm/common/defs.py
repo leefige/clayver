@@ -4,6 +4,8 @@ par_dir = os.path.dirname(current_dir)
 
 PARSED_DIR = par_dir + "/parsed/"
 MODEL_DIR = par_dir + '/models/'
+SCORE_DIR = par_dir + '/score/'
+SCORE_MODEL_DIR = SCORE_DIR + 'models/'
 DATA_DIR = par_dir + "/data/"
 LOG_PATH = par_dir + "/data/"
 FEED_DIR = par_dir + "/feed/"
