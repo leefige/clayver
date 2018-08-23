@@ -201,4 +201,4 @@ if __name__ == '__main__':
     print("positiveCnt:", positiveCnt)
     print("y[:5]:", y[:5])
     print("Start to classify...")
-    classify(X, y, target, epo=2000)
+    classify(X, y, target, epo=1700)
