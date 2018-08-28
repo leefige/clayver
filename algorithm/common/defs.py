@@ -14,7 +14,7 @@ FEED_DIR = par_dir + "/feed/"
 
 PORT_NAME = "COM4"
 
-CLASS_NUM = 6
+CLASS_NUM = 14
 TEST_POINT_NUM = 14
 SENSOR_NUM = 15
 ADC_NUM = 6
