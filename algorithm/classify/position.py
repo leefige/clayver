@@ -153,7 +153,7 @@ if __name__ == '__main__':
             if label < 0:
                 continue
             Xy.append([feed, label])
-        print("\nFinished!")
+        print("\nFinished! Feed num: %d" % len(Xy))
         shuffle(Xy)
         X = [it[0] for it in Xy]
         y = [it[1] for it in Xy]
@@ -171,4 +171,4 @@ if __name__ == '__main__':
     print("X.shape:", X.shape)
     print("y.shape:", y.shape)
     print("Start to classify...")
-    classify(X, y, class_num=class_num, epo=2001, init_epo=2000)
+    classify(X, y, class_num=class_num, epo=1000, init_epo=200)
