@@ -28,9 +28,12 @@ def saveFeature(obj, filename:str):
     return obj
 
 # read data with label [-1, class_num)
-def json_loadAll(class_num=None):
+def json_loadAll(class_num=None, file_names:list=None):
     allData = []
-    files= os.listdir(PARSED_DIR)
+    if file_names:
+        files = file_names
+    else:
+        files = os.listdir(PARSED_DIR)
     for filename in files:
         if not os.path.isdir(filename):
             print("reading " + filename)
@@ -44,3 +47,5 @@ def json_loadAll(class_num=None):
                         break
             allData.extend(data)
     return [Sample(obj=da) for da in allData]
+
+

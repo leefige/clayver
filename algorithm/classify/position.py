@@ -15,8 +15,14 @@ from keras.models import load_model
 
 FEED_LEN = 10
 
-def getData(class_num):
-    allData = json_loadAll(class_num)
+trainArr = ['8-29_0', '8-29_1']
+# trainArr = ['8-13_0', '8-13_1', '8-13_2', 'wcy', 'zjl']
+
+def getData(class_num, file_names:list=None):
+    if file_names:
+        allData = json_loadAll(class_num, file_names=file_names)
+    else:
+        allData = json_loadAll(class_num)
     sorted(allData, key=lambda x : x.tp)
 
     # pick out idle
